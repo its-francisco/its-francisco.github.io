@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Lighting Prototype</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: 'var(--color-primary-50)',
+                            100: 'var(--color-primary-100)',
+                            200: 'var(--color-primary-200)',
+                            300: 'var(--color-primary-300)',
+                            400: 'var(--color-primary-400)',
+                            500: 'var(--color-primary-500)',
+                            600: 'var(--color-primary-600)',
+                            700: 'var(--color-primary-700)',
+                            800: 'var(--color-primary-800)',
+                            900: 'var(--color-primary-900)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- MapLibre GL JS -->
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+    <!-- Mapbox GL Draw -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css" />
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <nav class="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm z-10">
+        <div class="p-6 border-b border-gray-200">
+            <h1 id="sidebar-title" class="text-xl font-bold text-primary-600">Lumina Control</h1>
+        </div>
+        <div class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-1 px-3">
+                <li>
+                    <button onclick="switchTab('map')" id="nav-map" class="nav-btn w-full flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary-50 text-primary-700">
+                        <svg class="mr-3 h-5 w-5 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                        Map View
+                    </button>
+                </li>
+                <li>
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        Dashboard
+                    </button>
+                </li>
+                <li>
+                    <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-btn w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        Inventory
+                    </button>
+                </li>
+                <li>
+                    <button onclick="switchTab('profiles')" id="nav-profiles" class="nav-btn w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 hover:text-gray-900">
+                        <svg class="mr-3 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        Profiles
+                    </button>
+                </li>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 relative bg-gray-50 overflow-y-auto">
+        
+        <!-- MAP VIEW -->
+        <div id="view-map" class="view-section absolute inset-0 z-0">
+            <div id="map" class="w-full h-full"></div>
+            
+            <!-- Toggle Draw Tools Button -->
+            <button id="draw-tools-toggle-btn" onclick="document.getElementById('draw-tools-overlay').classList.toggle('hidden')" class="absolute z-20 bg-primary-600 text-white p-3 rounded-full shadow-lg hover:bg-primary-700 transition-colors focus:outline-none" title="Toggle Draw Tools">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+            </button>
+
+            <!-- Draw Polygon Tools Instructions Overlay -->
+            <div id="draw-tools-overlay" class="hidden absolute bg-white/90 p-4 rounded-lg shadow-md max-w-sm z-20 transition-all">
+                <h3 class="font-bold text-sm mb-1">Region Programming</h3>
+                <p class="text-xs text-gray-600 mb-3">Use the polygon tool to draw a region. Click an existing region to program the lights inside.</p>
+                <button onclick="if(window.draw) window.draw.changeMode('draw_polygon'); document.getElementById('draw-tools-overlay').classList.add('hidden');" class="bg-primary-600 text-white px-3 py-1.5 text-sm rounded shadow hover:bg-primary-700 w-full transition-colors">
+                    Draw Region
+                </button>
+            </div>
+
+            <!-- Add Light Map Selection Overlay (Hidden by default) -->
+            <div id="map-selection-overlay" class="hidden absolute top-4 left-1/2 transform -translate-x-1/2 z-20 bg-primary-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
+                <span class="text-sm font-medium">Click on the map to place the new light node</span>
+                <button onclick="cancelMapSelection()" class="bg-primary-700 hover:bg-primary-800 rounded-full p-1 focus:outline-none transition-colors" title="Cancel Selection">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="view-section hidden p-8 h-full">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">System Dashboard</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Weather Widget -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                        Current Weather
+                    </h3>
+                    <div class="flex items-center space-x-4">
+                        <div id="weather-temp" class="text-4xl font-light text-gray-800"></div>
+                        <div class="text-sm text-gray-500 flex flex-col">
+                            <span id="weather-condition"></span>
+                            <span id="weather-humidity"></span>
+                            <span id="weather-wind"></span>
+                        </div>
+                    </div>
+                    <div id="weather-sun" class="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-400">
+                    </div>
+                </div>
+
+                <!-- Inventory Widget -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        Inventory Status
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Total Lights</span>
+                            <span id="inv-total" class="font-medium text-gray-800"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Active / Online</span>
+                            <span id="inv-active" class="font-medium text-green-600"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Needs Maintenance</span>
+                            <span id="inv-maintenance" class="font-medium text-red-500"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div id="inv-ratio" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROGRAMMING VIEW -->
+        <div id="view-programming" class="view-section hidden p-8 h-full max-w-3xl mx-auto">
+            <div class="mb-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-800">Region Programming 
+                    <span id="prog-region-id" class="text-primary-600 text-lg font-normal ml-2"></span>
+                </h2>
+                <button onclick="switchTab('map')" class="text-sm text-primary-600 hover:text-primary-800">← Back to Map</button>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+                <form onsubmit="event.preventDefault(); alert('Profile saved successfully!');">
+                    
+                    <div class="mb-8">
+                        <h3 class="text-md font-medium text-gray-800 mb-4 border-b pb-2">Schedule</h3>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                <input type="date" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border p-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                <input type="date" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border p-2">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <h3 class="text-md font-medium text-gray-800 mb-4 border-b pb-2">Astronomical Triggers</h3>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Turn ON after sunset (minutes) <span class="text-red-500">*</span></label>
+                                <input type="number" required value="15" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border p-2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Turn OFF after sunrise (minutes) <span class="text-red-500">*</span></label>
+                                <input type="number" required value="30" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border p-2">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <h3 class="text-md font-medium text-gray-800 mb-4 border-b pb-2">Time-Based Configuration</h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Choose Light Profile <span class="text-red-500">*</span></label>
+                            <select id="light-profile-select" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border p-2 bg-white">
+                            </select>
+                            <p class="mt-2 text-xs text-gray-500">A profile defines for each hour its specific light intensity.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 font-medium">
+                            Save Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- PROFILES VIEW -->
+        <div id="view-profiles" class="view-section hidden p-8 h-full max-w-4xl mx-auto">
+            <div class="mb-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-800">Dimming Profiles</h2>
+                <button onclick="document.getElementById('create-profile-modal').classList.remove('hidden')" class="bg-primary-600 text-white px-4 py-2 text-sm rounded shadow hover:bg-primary-700 transition">
+                    + Create Custom Profile
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="profiles-list">
+                <!-- Profiles will be populated here -->
+            </div>
+        </div>
+
+        <!-- CREATE PROFILE MODAL (MOCK) -->
+        <div id="create-profile-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-8 w-full max-w-md">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">New Custom Profile</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Profile Name <span class="text-red-500">*</span></label>
+                    <input type="text" placeholder="e.g. Early Morning Eco" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border p-2">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Dimming Schedule</label>
+                    
+                    <div class="space-y-2 border border-gray-200 rounded p-3 bg-gray-50 h-40 overflow-y-auto">
+                        <!-- Mock schedule entries -->
+                        <div class="flex gap-2 items-center">
+                            <input type="time" value="18:00" class="border p-1 rounded text-sm w-32 border-gray-300">
+                            <span class="text-gray-500 text-xs">to</span>
+                            <input type="time" value="23:00" class="border p-1 rounded text-sm w-32 border-gray-300">
+                            <input type="number" placeholder="%" value="100" class="border p-1 text-sm rounded w-16 border-gray-300">
+                            <button class="text-red-500 hover:text-red-700 ml-auto">×</button>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <input type="time" value="23:00" class="border p-1 rounded text-sm w-32 border-gray-300">
+                            <span class="text-gray-500 text-xs">to</span>
+                            <input type="time" value="06:00" class="border p-1 rounded text-sm w-32 border-gray-300">
+                            <input type="number" placeholder="%" value="40" class="border p-1 text-sm rounded w-16 border-gray-300">
+                            <button class="text-red-500 hover:text-red-700 ml-auto">×</button>
+                        </div>
+                        
+                        <button class="text-xs text-primary-600 font-medium hover:underline mt-2">+ Add Time Block</button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Specify intensity percentages for time periods</p>
+                </div>
+
+                <div class="flex justify-end pt-2 border-t gap-3">
+                    <button onclick="document.getElementById('create-profile-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium">Cancel</button>
+                    <button onclick="document.getElementById('create-profile-modal').classList.add('hidden'); alert('Profile saved successfully!')" class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium">Save Profile</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- INVENTORY VIEW -->
+        <div id="view-inventory" class="view-section hidden p-8 h-full max-w-5xl mx-auto overflow-y-auto w-full">
+            <div class="mb-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-800">Hardware Inventory</h2>
+                <button onclick="document.getElementById('add-light-modal').classList.remove('hidden')" class="bg-primary-600 text-white px-4 py-2 text-sm rounded shadow hover:bg-primary-700 transition">
+                    + Add New Light
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200 text-left">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Coordinates</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-list" class="bg-white divide-y divide-gray-200">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ADD LIGHT MODAL (MOCK) -->
+        <div id="add-light-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 p-8 w-full max-w-md">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Add New Light</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Light ID <span class="text-red-500">*</span></label>
+                    <input type="text" placeholder="e.g. L005" required class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border p-2">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Location <span class="text-red-500">*</span></label>
+                    <div class="flex gap-2">
+                        <input id="add-light-lat" type="number" step="0.0001" placeholder="Lat" required readonly class="w-full bg-gray-50 border-gray-300 rounded-md shadow-sm sm:text-sm border p-2 text-gray-500 cursor-not-allowed">
+                        <input id="add-light-lng" type="number" step="0.0001" placeholder="Lng" required readonly class="w-full bg-gray-50 border-gray-300 rounded-md shadow-sm sm:text-sm border p-2 text-gray-500 cursor-not-allowed">
+                        <button type="button" onclick="startMapSelection()" class="bg-primary-50 text-primary-700 hover:bg-primary-100 hover:text-primary-800 px-3 py-2 rounded-md border border-primary-200 text-sm font-medium whitespace-nowrap transition-colors flex items-center">
+                            <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            Pick
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-4 gap-3 border-t mt-6">
+                    <button onclick="document.getElementById('add-light-modal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm font-medium">Cancel</button>
+                    <button onclick="document.getElementById('add-light-modal').classList.add('hidden'); alert('Light added to inventory!')" class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 text-sm font-medium">Add Light</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
